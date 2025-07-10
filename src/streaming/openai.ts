@@ -39,7 +39,9 @@ export class OpenAIComputerStreamer implements ComputerInteractionStreamerFacade
   constructor(desktop: Sandbox, resolutionScaler: ResolutionScaler) {
     this.desktop = desktop;
     this.resolutionScaler = resolutionScaler;
-    this.openai = new OpenAI();
+    this.openai = new OpenAI({
+      apiKey: process.env.OPEN_AI_API_KEY || process.env.OPENAI_API_KEY
+    });
     this.instructions = INSTRUCTIONS;
   }
 
@@ -135,10 +137,13 @@ export class OpenAIComputerStreamer implements ComputerInteractionStreamerFacade
         environment: "linux",
       };
 
+      // Build up conversation history for Zero Data Retention accounts
+      let conversationHistory = [...(messages as any)];
+
       let response = await this.openai.responses.create({
         model: "computer-use-preview",
         tools: [computerTool],
-        input: [...(messages as any)],
+        input: conversationHistory,
         truncation: "auto",
         instructions: this.instructions,
         reasoning: {
@@ -196,6 +201,13 @@ export class OpenAIComputerStreamer implements ComputerInteractionStreamerFacade
           action,
         };
 
+        // Add the computer call to conversation history
+        conversationHistory.push({
+          type: "computer_call",
+          call_id: callId,
+          action: action,
+        });
+
         await this.executeAction(action);
 
         yield {
@@ -214,12 +226,14 @@ export class OpenAIComputerStreamer implements ComputerInteractionStreamerFacade
           },
         };
 
+        // Add the computer call output to conversation history
+        conversationHistory.push(computerCallOutput);
+
         response = await this.openai.responses.create({
           model: "computer-use-preview",
-          previous_response_id: response.id,
           instructions: this.instructions,
           tools: [computerTool],
-          input: [computerCallOutput],
+          input: conversationHistory,
           truncation: "auto",
           reasoning: {
             effort: "medium",
@@ -228,21 +242,38 @@ export class OpenAIComputerStreamer implements ComputerInteractionStreamerFacade
         });
       }
     } catch (error) {
-      console.error("OPENAI_STREAMER", error);
-      if (error instanceof OpenAI.APIError && error.status === 429) {
+      console.error("OPENAI_STREAMER FULL ERROR:", error);
+      
+      if (error instanceof OpenAI.APIError) {
+        console.error("OpenAI API Error details:", {
+          status: error.status,
+          message: error.message,
+          type: error.type,
+          code: error.code
+        });
+        
+        if (error.status === 429) {
+          yield {
+            type: SSEEventType.ERROR,
+            content: "API quota exceeded. Please try again later.",
+          };
+          yield {
+            type: SSEEventType.DONE,
+          };
+          return;
+        }
+        
         yield {
           type: SSEEventType.ERROR,
-          content: "API quota exceeded. Please try again later.",
+          content: `OpenAI API Error (${error.status}): ${error.message}`,
         };
+      } else {
+        console.error("Non-OpenAI error:", error);
         yield {
-          type: SSEEventType.DONE,
+          type: SSEEventType.ERROR,
+          content: `AI service error: ${error instanceof Error ? error.message : "Unknown error"}`,
         };
-        return;
       }
-      yield {
-        type: SSEEventType.ERROR,
-        content: "An error occurred with the AI service. Please try again.",
-      };
     }
   }
 } 

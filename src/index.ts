@@ -90,7 +90,7 @@ Get your E2B API key from: https://e2b.dev/docs/quickstart/api-key
 
   // Fallback to environment variables if not provided as arguments
   config.e2bApiKey = config.e2bApiKey || process.env.E2B_API_KEY || null;
-  config.openaiApiKey = config.openaiApiKey || process.env.OPENAI_API_KEY || null;
+  config.openaiApiKey = config.openaiApiKey || process.env.OPEN_AI_API_KEY || process.env.OPENAI_API_KEY || null;
   config.anthropicApiKey = config.anthropicApiKey || process.env.ANTHROPIC_API_KEY || null;
 
   return config;
