@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import 'dotenv/config';
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
@@ -9,6 +10,7 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import { SandboxManager } from "./sandbox-manager.js";
 import { ComputerUseTools } from "./computer-use-tools.js";
+import { NaturalLanguageComputerTools } from "./natural-language-tools.js";
 import { z } from "zod";
 
 // Parse command line arguments
@@ -123,10 +125,21 @@ const CleanupSandboxSchema = z.object({
   sandboxId: z.string(),
 });
 
+const NaturalLanguageActionSchema = z.object({
+  sandboxId: z.string(),
+  instruction: z.string(),
+  messages: z.array(z.object({
+    role: z.enum(["user", "assistant"]),
+    content: z.string(),
+  })).optional(),
+  resolution: z.tuple([z.number(), z.number()]).optional(),
+});
+
 class E2BComputerUseMCPServer {
   private server: Server;
   private sandboxManager: SandboxManager;
   private computerUseTools: ComputerUseTools;
+  private naturalLanguageTools: NaturalLanguageComputerTools;
   private config: ReturnType<typeof parseArgs>;
 
   constructor(config: ReturnType<typeof parseArgs>) {
@@ -146,6 +159,7 @@ class E2BComputerUseMCPServer {
 
     this.sandboxManager = new SandboxManager(config.e2bApiKey);
     this.computerUseTools = new ComputerUseTools(this.sandboxManager);
+    this.naturalLanguageTools = new NaturalLanguageComputerTools(this.sandboxManager);
     this.setupHandlers();
   }
 
@@ -271,6 +285,50 @@ class E2BComputerUseMCPServer {
               properties: {},
             },
           },
+          {
+            name: "execute_natural_language_action",
+            description: "Execute computer actions based on natural language instructions using AI",
+            inputSchema: {
+              type: "object",
+              properties: {
+                sandboxId: {
+                  type: "string",
+                  description: "Sandbox ID to execute actions on",
+                },
+                instruction: {
+                  type: "string",
+                  description: "Natural language instruction for the AI to execute (e.g., 'Open Firefox and go to google.com')",
+                },
+                messages: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      role: {
+                        type: "string",
+                        enum: ["user", "assistant"],
+                        description: "Message role",
+                      },
+                      content: {
+                        type: "string",
+                        description: "Message content",
+                      },
+                    },
+                    required: ["role", "content"],
+                  },
+                  description: "Optional conversation history for context",
+                },
+                resolution: {
+                  type: "array",
+                  items: { type: "number" },
+                  minItems: 2,
+                  maxItems: 2,
+                  description: "Screen resolution [width, height]",
+                },
+              },
+              required: ["sandboxId", "instruction"],
+            },
+          },
         ] as Tool[],
       };
     });
@@ -363,6 +421,29 @@ class E2BComputerUseMCPServer {
                 },
               ],
             };
+          }
+
+          case "execute_natural_language_action": {
+            const parsed = NaturalLanguageActionSchema.parse(args);
+            const result = await this.naturalLanguageTools.executeNaturalLanguageAction(parsed);
+            
+            // Include final screenshot as image if available
+            const content: any[] = [
+              {
+                type: "text",
+                text: JSON.stringify(result, null, 2),
+              },
+            ];
+            
+            if (result.finalScreenshot) {
+              content.push({
+                type: "image",
+                data: result.finalScreenshot.base64,
+                mimeType: "image/png",
+              });
+            }
+            
+            return { content };
           }
 
           default:
