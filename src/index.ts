@@ -285,50 +285,50 @@ class E2BComputerUseMCPServer {
               properties: {},
             },
           },
-          {
-            name: "execute_natural_language_action",
-            description: "Execute computer actions based on natural language instructions using AI",
-            inputSchema: {
-              type: "object",
-              properties: {
-                sandboxId: {
-                  type: "string",
-                  description: "Sandbox ID to execute actions on",
-                },
-                instruction: {
-                  type: "string",
-                  description: "Natural language instruction for the AI to execute (e.g., 'Open Firefox and go to google.com')",
-                },
-                messages: {
-                  type: "array",
-                  items: {
-                    type: "object",
-                    properties: {
-                      role: {
-                        type: "string",
-                        enum: ["user", "assistant"],
-                        description: "Message role",
-                      },
-                      content: {
-                        type: "string",
-                        description: "Message content",
-                      },
-                    },
-                    required: ["role", "content"],
-                  },
-                  description: "Optional conversation history for context",
-                },
-                resolution: {
-                  type: "array",
-                  items: { type: "number" },
-                  minItems: 2,
-                  maxItems: 2,
-                  description: "Screen resolution [width, height]",
-                },
-              },
-              required: ["sandboxId", "instruction"],
-            },
-          },
+          // {
+          //   name: "execute_natural_language_action",
+          //   description: "Execute computer actions based on natural language instructions using AI",
+          //   inputSchema: {
+          //     type: "object",
+          //     properties: {
+          //       sandboxId: {
+          //         type: "string",
+          //         description: "Sandbox ID to execute actions on",
+          //       },
+          //       instruction: {
+          //         type: "string",
+          //         description: "Natural language instruction for the AI to execute (e.g., 'Open Firefox and go to google.com')",
+          //       },
+          //       messages: {
+          //         type: "array",
+          //         items: {
+          //           type: "object",
+          //           properties: {
+          //             role: {
+          //               type: "string",
+          //               enum: ["user", "assistant"],
+          //               description: "Message role",
+          //             },
+          //             content: {
+          //               type: "string",
+          //               description: "Message content",
+          //             },
+          //           },
+          //           required: ["role", "content"],
+          //         },
+          //         description: "Optional conversation history for context",
+          //       },
+          //       resolution: {
+          //         type: "array",
+          //         items: { type: "number" },
+          //         minItems: 2,
+          //         maxItems: 2,
+          //         description: "Screen resolution [width, height]",
+          //       },
+          //     },
+          //     required: ["sandboxId", "instruction"],
+          //   },
+          // },
         ] as Tool[],
       };
     });

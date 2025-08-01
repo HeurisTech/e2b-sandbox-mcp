@@ -60,6 +60,7 @@ E2B_API_KEY=your_e2b_api_key_here
 ```
 
 **Get your E2B API key:**
+
 1. Visit [E2B Dashboard](https://e2b.dev/dashboard)
 2. Sign up/log in
 3. Navigate to "API Keys"
@@ -87,25 +88,10 @@ Add to your MCP configuration file (e.g., `mcp.json`):
   "mcpServers": {
     "e2b-sandbox": {
       "command": "node",
-      "args": [
-        "/path/to/e2b-sandbox-mcp/dist/index.js",
-        "--e2b-api-key=your_api_key_here"
-      ]
-    }
-  }
-}
-```
-
-**Alternative with environment variables:**
-
-```json
-{
-  "mcpServers": {
-    "e2b-sandbox": {
-      "command": "node",
-      "args": ["/path/to/e2b-sandbox-mcp/dist/index.js"],
+      "args": ["/PATH_TO/e2b-sandbox-mcp/dist/index.js"],
       "env": {
-        "E2B_API_KEY": "your_api_key_here"
+        "OPEN_AI_API_KEY": "YOUR_OPEN_AI_API_KEY",
+        "E2B_API_KEY": "YOUR_E2B_API_KEY"
       }
     }
   }
@@ -121,10 +107,12 @@ Add to your MCP configuration file (e.g., `mcp.json`):
 Creates a new E2B desktop sandbox instance.
 
 **Parameters:**
+
 - `resolution` (optional): Array of [width, height]. Default: `[1920, 1080]`
 - `timeout` (optional): Timeout in milliseconds. Default: `600000` (10 minutes)
 
 **Example:**
+
 ```json
 {
   "name": "create_sandbox",
@@ -136,6 +124,7 @@ Creates a new E2B desktop sandbox instance.
 ```
 
 **Response:**
+
 ```json
 {
   "sandboxId": "imy7xu1l122itq99pp4rn-9886af4b",
@@ -151,21 +140,22 @@ Creates a new E2B desktop sandbox instance.
 Execute computer actions on the sandbox desktop.
 
 **Parameters:**
+
 - `sandboxId`: The sandbox ID to execute action on
 - `action`: Action object with type and parameters
 
 **Supported Actions:**
 
-| Action Type | Description | Parameters |
-|------------|-------------|------------|
-| `click` | Click at coordinates | `x`, `y`, `button` (left/right/middle) |
-| `double_click` | Double-click at coordinates | `x`, `y`, `button` |
-| `type` | Type text | `text` |
-| `keypress` | Press keyboard keys | `keys` (e.g., "Ctrl+c", "Return") |
-| `move` | Move mouse cursor | `x`, `y` |
-| `scroll` | Scroll vertically | `scroll_y`, `x`, `y` |
-| `drag` | Drag from point A to B | `path` (array of {x, y} points) |
-| `screenshot` | Take screenshot | None |
+| Action Type    | Description                 | Parameters                             |
+| -------------- | --------------------------- | -------------------------------------- |
+| `click`        | Click at coordinates        | `x`, `y`, `button` (left/right/middle) |
+| `double_click` | Double-click at coordinates | `x`, `y`, `button`                     |
+| `type`         | Type text                   | `text`                                 |
+| `keypress`     | Press keyboard keys         | `keys` (e.g., "Ctrl+c", "Return")      |
+| `move`         | Move mouse cursor           | `x`, `y`                               |
+| `scroll`       | Scroll vertically           | `scroll_y`, `x`, `y`                   |
+| `drag`         | Drag from point A to B      | `path` (array of {x, y} points)        |
+| `screenshot`   | Take screenshot             | None                                   |
 
 **Examples:**
 
@@ -251,6 +241,7 @@ Capture a screenshot of the desktop.
 ```
 
 **Response:**
+
 ```json
 {
   "screenshot": "base64-encoded-image-data",
@@ -299,14 +290,14 @@ class ComputerUseClient {
       name: "create_sandbox",
       arguments: {
         resolution: [1920, 1080],
-        timeout: 600000
-      }
+        timeout: 600000,
+      },
     });
 
     const response = JSON.parse(result.content[0].text);
     return {
       sandboxId: response.sandboxId,
-      streamUrl: response.streamUrl
+      streamUrl: response.streamUrl,
     };
   }
 
@@ -316,8 +307,8 @@ class ComputerUseClient {
       name: "execute_computer_action",
       arguments: {
         sandboxId,
-        action: { type: "keypress", keys: "Meta+t" }
-      }
+        action: { type: "keypress", keys: "Meta+t" },
+      },
     });
 
     // Type URL
@@ -325,8 +316,8 @@ class ComputerUseClient {
       name: "execute_computer_action",
       arguments: {
         sandboxId,
-        action: { type: "type", text: url }
-      }
+        action: { type: "type", text: url },
+      },
     });
 
     // Press Enter
@@ -334,8 +325,8 @@ class ComputerUseClient {
       name: "execute_computer_action",
       arguments: {
         sandboxId,
-        action: { type: "keypress", keys: "Return" }
-      }
+        action: { type: "keypress", keys: "Return" },
+      },
     });
   }
 }
@@ -344,7 +335,7 @@ class ComputerUseClient {
 ### React Frontend Integration
 
 ```tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 
 interface DesktopViewerProps {
   streamUrl: string;
@@ -358,7 +349,7 @@ function DesktopViewer({ streamUrl }: DesktopViewerProps) {
         className="w-full h-full border-0"
         allow="clipboard-read; clipboard-write; fullscreen"
         title="E2B Desktop Sandbox"
-        style={{ minHeight: '600px' }}
+        style={{ minHeight: "600px" }}
       />
     </div>
   );
@@ -371,7 +362,7 @@ function App() {
     // Your MCP client call here
     const response = await mcpClient.callTool({
       name: "create_sandbox",
-      arguments: { resolution: [1920, 1080] }
+      arguments: { resolution: [1920, 1080] },
     });
     setSandboxData(JSON.parse(response.content[0].text));
   };
@@ -381,10 +372,8 @@ function App() {
       <button onClick={createSandbox} className="btn-primary">
         Create Desktop Sandbox
       </button>
-      
-      {sandboxData && (
-        <DesktopViewer streamUrl={sandboxData.streamUrl} />
-      )}
+
+      {sandboxData && <DesktopViewer streamUrl={sandboxData.streamUrl} />}
     </div>
   );
 }
@@ -400,12 +389,12 @@ class AIComputerAgent {
     // 1. Take screenshot to understand current state
     const screenshot = await this.mcpClient.callTool({
       name: "get_screenshot",
-      arguments: { sandboxId }
+      arguments: { sandboxId },
     });
 
     // 2. Process with AI to determine next actions
     const actions = await this.analyzeAndPlan(
-      instruction, 
+      instruction,
       screenshot.content[0].text
     );
 
@@ -413,11 +402,11 @@ class AIComputerAgent {
     for (const action of actions) {
       await this.mcpClient.callTool({
         name: "execute_computer_action",
-        arguments: { sandboxId, action }
+        arguments: { sandboxId, action },
       });
 
       // Small delay between actions
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 500));
     }
   }
 
@@ -426,7 +415,7 @@ class AIComputerAgent {
     // Return array of computer actions
     return [
       { type: "click", x: 100, y: 200, button: "left" },
-      { type: "type", text: "Hello World" }
+      { type: "type", text: "Hello World" },
     ];
   }
 }
@@ -471,7 +460,7 @@ class AIComputerAgent {
 ### Key Components
 
 - **MCP Server**: Handles tool calls and manages E2B API interactions
-- **Sandbox Manager**: Creates, tracks, and cleans up sandbox instances  
+- **Sandbox Manager**: Creates, tracks, and cleans up sandbox instances
 - **Computer Use Tools**: Executes mouse, keyboard, and system actions
 - **Stream Manager**: Provides VNC URLs for real-time desktop viewing
 - **Action Executor**: Translates MCP actions to E2B desktop commands
@@ -557,13 +546,13 @@ npm run dev
 
 ### Common Issues
 
-| Problem | Solution |
-|---------|----------|
-| `E2B_API_KEY not found` | Set environment variable or pass `--e2b-api-key` argument |
-| `Sandbox creation fails` | Check E2B API key validity and account quota |
-| `Actions not executing` | Verify sandbox is active with `list_sandboxes` |
-| `Stream URL not working` | Ensure sandbox supports VNC (desktop template) |
-| `High memory usage` | Implement proper sandbox cleanup after use |
+| Problem                  | Solution                                                  |
+| ------------------------ | --------------------------------------------------------- |
+| `E2B_API_KEY not found`  | Set environment variable or pass `--e2b-api-key` argument |
+| `Sandbox creation fails` | Check E2B API key validity and account quota              |
+| `Actions not executing`  | Verify sandbox is active with `list_sandboxes`            |
+| `Stream URL not working` | Ensure sandbox supports VNC (desktop template)            |
+| `High memory usage`      | Implement proper sandbox cleanup after use                |
 
 ### Debug Mode
 
@@ -632,4 +621,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 Made with ❤️ for the AI automation community
 
-</div> 
+</div>
