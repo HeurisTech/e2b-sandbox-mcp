@@ -1,29 +1,29 @@
 {
   "name": "e2b-sandbox-mcp",
-  "version": "1.0.0",
-  "description": "AI-powered computer use through secure E2B cloud sandboxes via Model Context Protocol",
-  "main": "dist/index.js",
+  "version": "1.2.0",
+  "description": "E2B sandboxes (desktop + code interpreter) via Model Context Protocol - supports weight-space programming and computer use",
+  "main": "dist/server.js",
   "type": "module",
   "scripts": {
-    "build": "tsc",
-    "dev": "tsx src/index.ts",
-    "start": "node dist/index.js",
-    "inspect": "tsx --inspect src/index.ts",
-    "test": "node examples/simple-test.js",
-    "setup": "chmod +x setup-and-test.sh && ./setup-and-test.sh"
+    "build": "tsc --pretty false",
+    "start": "node dist/server.js",
+    "dev": "tsx src/server.ts"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.39.0",
+    "@e2b/code-interpreter": "^1.5.0",
     "@e2b/desktop": "^1.8.1",
-    "@modelcontextprotocol/sdk": "^1.0.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "dotenv": "^17.2.0",
-    "openai": "^4.87.2",
+    "express": "^5.2.0",
     "sharp": "^0.33.3",
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@types/express": "^5.0.0",
     "@types/node": "^22.10.2",
-    "tsx": "^4.16.2",
     "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }
