@@ -1,7 +1,7 @@
 {
   "name": "e2b-sandbox-mcp",
-  "version": "1.1.1",
-  "description": "AI-powered computer use through secure E2B cloud sandboxes via Model Context Protocol (HTTP for Render)",
+  "version": "1.2.0",
+  "description": "E2B sandboxes (desktop + code interpreter) via Model Context Protocol - supports weight-space programming and computer use",
   "main": "dist/server.js",
   "type": "module",
   "scripts": {
@@ -10,6 +10,7 @@
     "dev": "tsx src/server.ts"
   },
   "dependencies": {
+    "@e2b/code-interpreter": "^1.5.0",
     "@e2b/desktop": "^1.8.1",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "dotenv": "^17.2.0",
