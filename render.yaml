@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: e2b-sandbox-mcp
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: E2B_API_KEY
+        sync: false
+      - key: MCP_API_TOKEN
+        generateValue: true
+      - key: NODE_VERSION
+        value: "22"
