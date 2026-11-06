@@ -6,6 +6,7 @@ import { timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import { SandboxManager } from "./sandbox-manager.js";
 import { ComputerUseTools } from "./computer-use-tools.js";
+import { CodeSandboxManager } from "./code-tools.js";
 
 const MCP_API_TOKEN = process.env.MCP_API_TOKEN;
 const E2B_API_KEY = process.env.E2B_API_KEY || null;
@@ -13,17 +14,20 @@ const E2B_API_KEY = process.env.E2B_API_KEY || null;
 // Shared instances (stateless transport, but we keep sandbox state in memory)
 const sandboxManager = new SandboxManager(E2B_API_KEY);
 const computerUseTools = new ComputerUseTools(sandboxManager);
+const codeSandboxManager = new CodeSandboxManager(E2B_API_KEY);
 
 export function createServer(): McpServer {
   const server = new McpServer(
-    { name: "e2b-computer-use-mcp", version: "1.1.0" },
+    { name: "e2b-sandbox-mcp", version: "1.2.0" },
     { capabilities: { logging: {} } },
   );
+
+  // ========== DESKTOP TOOLS (existing) ==========
 
   server.registerTool(
     "create_sandbox",
     {
-      description: "Create a new E2B desktop sandbox instance",
+      description: "Create a new E2B desktop sandbox instance (GUI + VNC)",
       inputSchema: {
         resolution: z
           .tuple([z.number(), z.number()])
@@ -43,7 +47,7 @@ export function createServer(): McpServer {
   server.registerTool(
     "execute_computer_action",
     {
-      description: "Execute a computer action on the sandbox",
+      description: "Execute a computer action on the desktop sandbox",
       inputSchema: {
         sandboxId: z.string().describe("Sandbox ID to execute action on"),
         action: z.object({
@@ -79,7 +83,7 @@ export function createServer(): McpServer {
   server.registerTool(
     "get_stream_url",
     {
-      description: "Get the VNC stream URL for a sandbox",
+      description: "Get the VNC stream URL for a desktop sandbox",
       inputSchema: {
         sandboxId: z.string().describe("Sandbox ID to get stream URL for"),
       },
@@ -100,7 +104,7 @@ export function createServer(): McpServer {
   server.registerTool(
     "get_screenshot",
     {
-      description: "Take a screenshot of the sandbox desktop",
+      description: "Take a screenshot of the desktop sandbox",
       inputSchema: {
         sandboxId: z.string().describe("Sandbox ID to take screenshot of"),
       },
@@ -122,7 +126,7 @@ export function createServer(): McpServer {
   server.registerTool(
     "cleanup_sandbox",
     {
-      description: "Clean up and destroy a sandbox instance",
+      description: "Clean up and destroy a desktop sandbox instance",
       inputSchema: {
         sandboxId: z.string().describe("Sandbox ID to clean up"),
       },
@@ -143,11 +147,152 @@ export function createServer(): McpServer {
   server.registerTool(
     "list_sandboxes",
     {
-      description: "List all active sandbox instances",
+      description: "List all active desktop sandbox instances",
       inputSchema: {},
     },
     async () => {
       const result = await sandboxManager.listSandboxes();
+      return {
+        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+      };
+    },
+  );
+
+  // ========== CODE INTERPRETER TOOLS (new - for weight-space programming) ==========
+
+  server.registerTool(
+    "create_code_sandbox",
+    {
+      description:
+        "Create a new E2B code interpreter sandbox (Python, file system, packages). Use this for loading/editing neural network weights, running ML code, weight-space programming.",
+      inputSchema: {
+        timeout: z
+          .number()
+          .optional()
+          .describe("Timeout in milliseconds (default 10 minutes)"),
+      },
+    },
+    async ({ timeout }) => {
+      const result = await codeSandboxManager.createCodeSandbox(timeout);
+      return {
+        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+      };
+    },
+  );
+
+  server.registerTool(
+    "run_code",
+    {
+      description:
+        "Execute code inside a code sandbox. Defaults to Python. Perfect for loading models, inspecting tensors, modifying weights, etc.",
+      inputSchema: {
+        sandboxId: z.string().describe("Code sandbox ID"),
+        code: z.string().describe("Code to execute"),
+        language: z
+          .enum(["python", "javascript", "bash"])
+          .optional()
+          .describe("Language (default: python)"),
+      },
+    },
+    async ({ sandboxId, code, language }) => {
+      const result = await codeSandboxManager.runCode(
+        sandboxId,
+        code,
+        language || "python",
+      );
+      return {
+        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+      };
+    },
+  );
+
+  server.registerTool(
+    "write_file",
+    {
+      description: "Write a file inside a code sandbox",
+      inputSchema: {
+        sandboxId: z.string().describe("Code sandbox ID"),
+        path: z.string().describe("Absolute path inside the sandbox"),
+        content: z.string().describe("File content"),
+      },
+    },
+    async ({ sandboxId, path, content }) => {
+      const result = await codeSandboxManager.writeFile(sandboxId, path, content);
+      return {
+        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+      };
+    },
+  );
+
+  server.registerTool(
+    "read_file",
+    {
+      description: "Read a file from a code sandbox",
+      inputSchema: {
+        sandboxId: z.string().describe("Code sandbox ID"),
+        path: z.string().describe("Absolute path inside the sandbox"),
+      },
+    },
+    async ({ sandboxId, path }) => {
+      const result = await codeSandboxManager.readFile(sandboxId, path);
+      return {
+        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+      };
+    },
+  );
+
+  server.registerTool(
+    "list_files",
+    {
+      description: "List files/directories inside a code sandbox",
+      inputSchema: {
+        sandboxId: z.string().describe("Code sandbox ID"),
+        path: z
+          .string()
+          .optional()
+          .describe("Directory path (default: /home/user)"),
+      },
+    },
+    async ({ sandboxId, path }) => {
+      const result = await codeSandboxManager.listFiles(
+        sandboxId,
+        path || "/home/user",
+      );
+      return {
+        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+      };
+    },
+  );
+
+  server.registerTool(
+    "cleanup_code_sandbox",
+    {
+      description: "Destroy a code sandbox",
+      inputSchema: {
+        sandboxId: z.string().describe("Code sandbox ID to clean up"),
+      },
+    },
+    async ({ sandboxId }) => {
+      const result = await codeSandboxManager.cleanup(sandboxId);
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify({ success: result }, null, 2),
+          },
+        ],
+      };
+    },
+  );
+
+  server.registerTool(
+    "list_code_sandboxes",
+    {
+      description: "List all active code sandboxes",
+      inputSchema: {},
+    },
+    async () => {
+      const result = codeSandboxManager.list();
       return {
         content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
       };
@@ -192,6 +337,8 @@ app.get("/health", (_req: Request, res: Response) => {
   res.json({
     status: "ok",
     e2bConfigured: !!E2B_API_KEY,
+    version: "1.2.0",
+    features: ["desktop", "code-interpreter"],
     timestamp: new Date().toISOString(),
   });
 });
