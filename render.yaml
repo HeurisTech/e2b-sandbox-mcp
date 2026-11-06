@@ -3,7 +3,7 @@ services:
     name: e2b-sandbox-mcp
     runtime: node
     plan: free
-    buildCommand: npm install && npm run build
+    buildCommand: export NODE_OPTIONS=\"--max-old-space-size=460\" && npm install && npm run build
     startCommand: npm start
     envVars:
       - key: E2B_API_KEY

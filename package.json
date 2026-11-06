@@ -1,14 +1,13 @@
 {
   "name": "e2b-sandbox-mcp",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "AI-powered computer use through secure E2B cloud sandboxes via Model Context Protocol (HTTP for Render)",
   "main": "dist/server.js",
   "type": "module",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc --pretty false",
     "start": "node dist/server.js",
-    "dev": "tsx src/server.ts",
-    "stdio": "tsx src/index.ts"
+    "dev": "tsx src/server.ts"
   },
   "dependencies": {
     "@e2b/desktop": "^1.8.1",
@@ -21,7 +20,9 @@
   "devDependencies": {
     "@types/express": "^5.0.0",
     "@types/node": "^22.10.2",
-    "tsx": "^4.16.2",
     "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }
